@@ -18,6 +18,7 @@ bot = Bot(token=TOKEN)
 dp = Dispatcher()
 
 class User(StatesGroup):
+    remove = State()
     username = State()
     api_key = State()
 
@@ -98,10 +99,10 @@ async def wl_add_success(message: Message, state: FSMContext):
 
 @dp.callback_query(F.data == 'wl_remove')
 async def wl_remove(call: CallbackQuery, state: FSMContext):
-    await state.set_state(User.username)
+    await state.set_state(User.remove)
     await t_wl_remove(call)
 
-@dp.message(User.username)
+@dp.message(User.remove)
 async def wl_remove_success(message: Message, state: FSMContext):
     await state.clear()
     username = message.text
@@ -109,16 +110,17 @@ async def wl_remove_success(message: Message, state: FSMContext):
     with sqlite3.connect('db.db') as conn:
         cursor = conn.cursor()
         cursor.execute('''
-        DELETE FROM user WHERE username = ?
+        DELETE FROM users WHERE username = ?
         ''',
         (username,))
     await t_wl_remove_success(message)
 
 @dp.callback_query(F.data == 'wl_show')
 async def wl_show(call: CallbackQuery):
-    users = get_wl_list()
+    users = await get_wl_list()
+    context = ''
     for user in users:
-        context += f'{user[0]}\n'
+        context += f'@{user[0]}\n'
     await t_wl_show(call, context)
 
 #API
@@ -173,10 +175,11 @@ async def imei_final(message: Message, state: FSMContext):
     })
 
     data = await send_post_request(url, headers, body)
+    data = data['properties']
     if data:
-        await message.answer(f"Данные получены: \n{data}")
+        await message.answer(f"Данные получены: \nДевайс: {data['deviceName']}\nОписание: {data['modelDesc']}\nIMEI: {data['imei']}\nMEID: {data['meid']}\nСерийный номер: {data['serial']}", reply_markup=kb_start)
     else:
-        await message.answer("Не удалось получить данные.")
+        await message.answer("Не удалось получить данные.", reply_markup=kb_start)
 
 async def main():
     await dp.start_polling(bot)

@@ -33,11 +33,11 @@ async def t_wl(message: Message):
     else:
         await message.answer('Вы не администратор.')
 
-async def t_wl_add(message: Message):
-    await message.answer('Ввелите имя пользователя без @', reply_markup=kb_back)
+async def t_wl_add(call: CallbackQuery):
+    await call.message.answer('Введите имя пользователя без @', reply_markup=kb_back)
 
-async def t_wl_success(call: CallbackQuery):
-    await call.message.edit_text('Пользователь успешно добавлен в WhiteList!', reply_markup=kb_wl)
+async def t_wl_success(message: Message):
+    await message.answer('Пользователь успешно добавлен в WhiteList!', reply_markup=kb_wl)
 
 async def t_wl_remove(call: CallbackQuery):
     await call.message.answer('Введите имя пользователя без @', reply_markup=kb_back)
