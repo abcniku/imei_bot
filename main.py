@@ -19,8 +19,7 @@ dp = Dispatcher()
 
 class User(StatesGroup):
     remove = State()
-    username = State()
-    api_key = State()
+    add = State()
 
 class Imei(StatesGroup):
     imei = State()
@@ -30,8 +29,7 @@ with sqlite3.connect('db.db') as conn:
     cursor = conn.cursor()
     cursor.execute('''
         CREATE TABLE IF NOT EXISTS users (
-        username TEXT PRIMARY KEY,
-        api_key TEXT DEFAULT NULL
+        username TEXT PRIMARY KEY
         )
         ''')
 
@@ -53,15 +51,6 @@ async def get_wl_list():
 
         return white_list
     
-async def get_api_key(username):
-    with sqlite3.connect('db.db') as conn:
-        cursor = conn.cursor()
-        cursor.execute('''
-        SELECT * FROM users WHERE username = ?
-        ''', (username,))
-        api_key = cursor.fetchone()
-        return api_key
-    
 #Start
 @dp.message(Command('start'))
 async def start(message: Message):
@@ -81,10 +70,10 @@ async def wl(message: Message):
 
 @dp.callback_query(F.data == 'wl_add')
 async def wl_add(call: CallbackQuery, state: FSMContext):
-    await state.set_state(User.username)
+    await state.set_state(User.add)
     await t_wl_add(call)
 
-@dp.message(User.username)
+@dp.message(User.add)
 async def wl_add_success(message: Message, state: FSMContext):
     await state.clear()
     username = message.text
@@ -123,33 +112,6 @@ async def wl_show(call: CallbackQuery):
         context += f'@{user[0]}\n'
     await t_wl_show(call, context)
 
-#API
-@dp.callback_query(F.data == 'api_add')
-async def api_add(call: CallbackQuery, state: FSMContext):
-    await state.set_state(User.api_key)
-    await t_api_add(call)
-
-@dp.message(User.api_key)
-async def api_add_success(message: Message, state: FSMContext):
-    await state.clear()
-    api_key = message.text
-    with sqlite3.connect('db.db') as conn:
-        cursor = conn.cursor()
-        cursor.execute('''
-        UPDATE users SET api_key = ? WHERE username = ?
-        ''',
-        (api_key, message.from_user.username))
-    await t_api_success(message)
-
-@dp.callback_query(F.data == 'api_remove')
-async def api_remove(call: CallbackQuery):
-    with sqlite3.connect('db.db') as conn:
-        cursor = conn.cursor()
-        cursor.execute('''
-        UPDATE users SET api_key = NULL WHERE username = ?
-        ''', (call.from_user.username,))
-    await t_api_remove(call)
-
 #IMEI
 @dp.callback_query(F.data == 'IMEI')
 async def imei_entry(call: CallbackQuery, state: FSMContext):
@@ -162,7 +124,7 @@ async def imei_final(message: Message, state: FSMContext):
     imei = message.text
 
     url = "https://api.imeicheck.net/v1/checks"
-    api_key = await get_api_key(message.from_user.username)
+    api_key = api_key
 
     headers = {
     'Authorization': f'Bearer {api_key[1]}',

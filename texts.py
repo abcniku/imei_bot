@@ -48,14 +48,5 @@ async def t_wl_remove_success(message: Message):
 async def t_wl_show(call: CallbackQuery, context):
     await call.message.answer('WhiteList: \n'+context, reply_markup=kb_wl)
 
-async def t_api_add(call: CallbackQuery):
-    await call.message.answer('Введите API-ключ:', reply_markup=kb_back)
-
-async def t_api_success(message: Message):
-    await message.answer('API-ключ успешно добавлен!', reply_markup=kb_start)
-
-async def t_api_remove(call: CallbackQuery):
-    await call.message.answer('API-ключ удален.', reply_markup=kb_start)
-
 async def t_imei_entry(call: CallbackQuery):
     await call.message.answer('Введите IMEI:', reply_markup=kb_back)

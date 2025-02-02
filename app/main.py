@@ -1,23 +1,31 @@
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Depends, status
 import requests
 from pydantic import BaseModel
 
+from config import *
+
 app = FastAPI()
 
-# Модель для входных данных
 class Request(BaseModel):
     imei: str
     token: str
 
-# Эндпоинт, который принимает POST-запрос с двумя строками
+def verify_token(authorization: Request):
+    token_list = token_list
+    if not authorization.token in token_list():
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            deatil = 'Invalid token'
+        )
+    return True
+
 @app.post("/api/check-imei")
-async def fetch_data(user_request: Request):
-    # Здесь можно использовать строки для формирования запроса к стороннему ресурсу
-    # Например, передаем их как параметры запроса
-    url = "https://api.imeicheck.net/v1/checks"  # Замените на реальный URL стороннего ресурса
+async def fetch_data(user_request: Request, verification: bool = Depends(verify_token)):
+    url = "https://api.imeicheck.net/v1/checks"
+    api_key = api_key
 
     headers = {
-    'Authorization': f'Bearer {user_request.token}',
+    'Authorization': f'Bearer {api_key}',
     'Content-Type': 'application/json'
     }
 
@@ -27,7 +35,6 @@ async def fetch_data(user_request: Request):
     })
 
     try:
-        # Отправляем GET-запрос на сторонний ресурс
         response = requests.post(url, headers=headers, data=body)
         response.raise_for_status()
         data = response.json()
@@ -36,7 +43,6 @@ async def fetch_data(user_request: Request):
 
     return data
 
-# Запуск сервера
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8000)
